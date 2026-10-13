@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unique Site Finder</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Unique Site Finder 🔍</h1>
+      <p>Compare Vendor Sites against Cloudflare D1 Master Database.</p>
+    </header>
+
+    <div class="grid-layout">
+      <!-- Master Database Section -->
+      <section class="card">
+        <h2>1. Master Database (Cloudflare D1)</h2>
+        <p>Sync latest baseline domains directly from the cloud database.</p>
+        <button id="masterLoadBtn" class="action-btn mt-3 success-btn full-width" style="padding: 15px; font-size: 16px;">🔄 Sync Master Database</button>
+        <div id="masterStatus" class="status-box mt-3">No master data loaded.</div>
+      </section>
+
+      <!-- Vendor Sheet Section -->
+      <section class="card">
+        <h2>2. Vendor Sheet</h2>
+        <label><strong>Vendor Name:</strong></label>
+        <input type="text" id="vendorName" placeholder="e.g. Sky Blue, Prime Star" class="full-width mb-3 mt-1">
+        <div id="vendorFileSection">
+          <label><strong>Upload Vendor Excel File:</strong></label>
+          <input type="file" id="vendorFile" accept=".xlsx,.xls,.csv" class="full-width mt-1">
+        </div>
+        <div id="vendorSheetSelectArea" style="display: none;" class="mt-3">
+          <label><strong>Select Vendor Tab:</strong></label>
+          <select id="vendorSheetSelect" class="full-width mt-1"></select>
+          <label class="mt-2 block"><strong>Headers are on Row:</strong></label>
+          <input type="number" id="vendorHeaderRow" value="1" min="1" class="full-width mt-1">
+          <button id="vendorLoadBtn" class="action-btn mt-2 success-btn full-width">Load Vendor Data</button>
+        </div>
+        <div id="vendorStatus" class="status-box mt-3">No vendor data loaded.</div>
+      </section>
+    </div>
+
+    <!-- Action Section -->
+    <section class="card center-content mt-4">
+      <button id="compareBtn" class="large-btn primary-btn" disabled>Compare Sites</button>
+      <button id="exportBtn" class="large-btn success-btn ml-2" disabled>💾 Export Unique</button>
+      <button id="saveDbBtn" class="large-btn ml-2" style="background:#8e44ad; color:white;" disabled>☁️ Save Unique to Database</button>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats mt-4">
+      <div class="stat-box"><span>Master Sites</span><strong id="masterCount">0</strong></div>
+      <div class="stat-box"><span>Vendor Sites</span><strong id="vendorCount">0</strong></div>
+      <div class="stat-box warning"><span>Already in Master</span><strong id="existingCount">0</strong></div>
+      <div class="stat-box highlight"><span>Unique Sites</span><strong id="uniqueCount">0</strong></div>
+    </section>
+
+    <section class="card mt-4" id="resultsSection" style="display: none;">
+      <h2>Comparison Results</h2>
+      <div class="table-responsive">
+        <table id="resultTable">
+          <thead id="resultHead"></thead>
+          <tbody id="resultBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
