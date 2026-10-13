@@ -1,4 +1,4 @@
-let vendorWorkbook;
+let masterWorkbook, vendorWorkbook;
 let masterDomains = new Set();
 let vendorRows = [];
 let uniqueRows = [];
@@ -14,9 +14,26 @@ function extractDomain(url) {
 }
 
 // ==========================================
-// MASTER LOGIC (API CALL TO D1)
+// MASTER UI TABS
 // ==========================================
-document.getElementById('masterLoadBtn').addEventListener('click', async () => {
+document.getElementById('masterTabCloud').addEventListener('click', (e) => {
+    e.target.classList.add('active'); 
+    document.getElementById('masterTabFile').classList.remove('active');
+    document.getElementById('masterCloudSection').style.display = 'block'; 
+    document.getElementById('masterFileSection').style.display = 'none';
+});
+
+document.getElementById('masterTabFile').addEventListener('click', (e) => {
+    e.target.classList.add('active'); 
+    document.getElementById('masterTabCloud').classList.remove('active');
+    document.getElementById('masterFileSection').style.display = 'block'; 
+    document.getElementById('masterCloudSection').style.display = 'none';
+});
+
+// ==========================================
+// MASTER LOGIC (CLOUD & FILE)
+// ==========================================
+document.getElementById('masterLoadBtnCloud').addEventListener('click', async () => {
     const statusEl = document.getElementById('masterStatus');
     statusEl.textContent = "Fetching database... Please wait.";
     statusEl.style.borderLeftColor = "#f39c12";
@@ -38,22 +55,53 @@ document.getElementById('masterLoadBtn').addEventListener('click', async () => {
     }
 });
 
+document.getElementById('masterFile').addEventListener('change', e => {
+    if(!e.target.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        masterWorkbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+        const select = document.getElementById('masterSheetSelect');
+        select.innerHTML = '';
+        masterWorkbook.SheetNames.forEach(name => select.add(new Option(name, name)));
+        document.getElementById('masterSheetSelectArea').style.display = 'block';
+    };
+    reader.readAsArrayBuffer(e.target.files[0]);
+});
+
+document.getElementById('masterLoadBtnFile').addEventListener('click', () => {
+    if(!masterWorkbook) return;
+    const sheet = masterWorkbook.Sheets[document.getElementById('masterSheetSelect').value];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
+    
+    masterDomains.clear();
+    rows.forEach(row => {
+        row.forEach(cell => {
+            const domain = extractDomain(cell);
+            if(domain && domain.includes('.')) masterDomains.add(domain);
+        });
+    });
+
+    document.getElementById('masterCount').textContent = masterDomains.size;
+    const statusEl = document.getElementById('masterStatus');
+    statusEl.textContent = `Loaded ${masterDomains.size} unique domains from Excel.`;
+    statusEl.style.borderLeftColor = "#2ecc71";
+    checkCompareReady();
+});
+
 // ==========================================
 // VENDOR LOGIC
 // ==========================================
-function handleVendorWorkbook(wb) {
-    vendorWorkbook = wb;
-    const select = document.getElementById('vendorSheetSelect');
-    select.innerHTML = '';
-    wb.SheetNames.forEach(name => select.add(new Option(name, name)));
-    document.getElementById('vendorSheetSelectArea').style.display = 'block';
-    autoDetectVendorHeader();
-}
-
 document.getElementById('vendorFile').addEventListener('change', e => {
     if(!e.target.files[0]) return;
     const reader = new FileReader();
-    reader.onload = e => handleVendorWorkbook(XLSX.read(new Uint8Array(e.target.result), {type: 'array'}));
+    reader.onload = e => {
+        vendorWorkbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+        const select = document.getElementById('vendorSheetSelect');
+        select.innerHTML = '';
+        vendorWorkbook.SheetNames.forEach(name => select.add(new Option(name, name)));
+        document.getElementById('vendorSheetSelectArea').style.display = 'block';
+        autoDetectVendorHeader();
+    };
     reader.readAsArrayBuffer(e.target.files[0]);
 });
 
@@ -178,7 +226,6 @@ document.getElementById('exportBtn').addEventListener('click', () => {
     XLSX.writeFile(wb, `Unique_Sites_${vendorName}.xlsx`);
 });
 
-// NEW: Save unique domains to Cloudflare D1
 document.getElementById('saveDbBtn').addEventListener('click', async () => {
     if(uniqueRows.length === 0) return;
     
@@ -199,8 +246,10 @@ document.getElementById('saveDbBtn').addEventListener('click', async () => {
         
         alert("Successfully saved unique domains to Cloudflare D1 Master Database!");
         
-        // Auto-refresh master domains
-        document.getElementById('masterLoadBtn').click();
+        // Agar cloud tab active hai toh auto-refresh karein
+        if(document.getElementById('masterTabCloud').classList.contains('active')) {
+            document.getElementById('masterLoadBtnCloud').click();
+        }
         
         btn.textContent = "☁️ Saved!";
     } catch (e) {
